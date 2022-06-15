@@ -29,37 +29,40 @@
 /*--------------------------------------------------*/
 
 extern I2C_HandleTypeDef hi2c1;
-char udp_target[64];	// dns or ip address of udp target
-char stmuid[64] = { 0 };	// STM UUID
-ip_addr_t remoteip = { 0 };
+char udp_target[64];   // dns or ip address of udp target
+char stmuid[64] = {0}; // STM UUID
+ip_addr_t remoteip = {0};
 int expectedapage = 0;
 
 // The cgi handler is called when the user changes something on the webpage
 void httpd_cgi_handler(struct fs_file *file, const char *uri, int count, char **http_cgi_params,
-		char **http_cgi_param_vals) {
-	const char id[15][6] = { "led1", "sw1A", "sw1B", "sw1C", "sw1D", "sw2A", "sw2B", "sw2C", "sw2D", "btn", "PG2",
-			"PG1", "PG0", "RF1", "AGC" };
+					   char **http_cgi_param_vals)
+{
+	const char id[15][6] = {"led1", "sw1A", "sw1B", "sw1C", "sw1D", "sw2A", "sw2B", "sw2C", "sw2D", "btn", "PG2",
+							"PG1", "PG0", "RF1", "AGC"};
 
 	int i, j, val;
 	char *ptr;
 
-	j = strtol(*http_cgi_params, &ptr, 10);		// allow two chars len for the number
+	j = strtol(*http_cgi_params, &ptr, 10); // allow two chars len for the number
 
 	printf("httpd_cgi_handler: uri=%s, count=%d j=%d\n", uri, count, j);
 
-	for (i = 0; i < count; i++) {			/// number of things sent from the form
-//		printf("params=%d, id=%c, val=%c, j=%d\n", i, **http_cgi_params, (*http_cgi_param_vals)[i],j);
+	for (i = 0; i < count; i++)
+	{	/// number of things sent from the form
+		//		printf("params=%d, id=%c, val=%c, j=%d\n", i, **http_cgi_params, (*http_cgi_param_vals)[i],j);
 
-		switch (j) {
+		switch (j)
+		{
 
-		case 10:			// reboot button
+		case 10: // reboot button
 			printf("Reboot command from wwww\n");
 			osDelay(500);
-			__NVIC_SystemReset();   // reboot
+			__NVIC_SystemReset(); // reboot
 			break;
-		case 11:				// LED1
+		case 11: // LED1
 #ifdef TESTING
-				stats_display(); // this needs stats in LwIP enabling to do anything
+			stats_display(); // this needs stats in LwIP enabling to do anything
 #endif
 			if (((*http_cgi_param_vals)[i]) == '0')
 				HAL_GPIO_WritePin(GPIOD, LED_D4_Pin, GPIO_PIN_RESET);
@@ -73,41 +76,45 @@ void httpd_cgi_handler(struct fs_file *file, const char *uri, int count, char **
 		case 15:
 		case 16:
 		case 17:
-		case 18:		// output switch array
+		case 18: // output switch array
 		case 19:
-			j -= 11;	// now offset 0
-			if (((*http_cgi_param_vals)[i]) == '0') {
+			j -= 11; // now offset 0
+			if (((*http_cgi_param_vals)[i]) == '0')
+			{
 				muxdat[0] = muxdat[0] & ~(1 << (j - 1));
-			} else {
+			}
+			else
+			{
 				muxdat[0] = muxdat[0] | (1 << (j - 1));
 			}
-			logampmode = muxdat[0] & 2;		// lin/logamp output mux
+			logampmode = muxdat[0] & 2; // lin/logamp output mux
 			printf("setting outmux to 0x%02x\n", muxdat[0]);
-			if (HAL_I2C_Master_Transmit(&hi2c1, 0x44 << 1, &muxdat[0], 1, 1000) != HAL_OK) {		// RF dual MUX
+			if (HAL_I2C_Master_Transmit(&hi2c1, 0x44 << 1, &muxdat[0], 1, 1000) != HAL_OK)
+			{ // RF dual MUX
 				printf("I2C HAL returned error 1\n\r");
 			}
 			break;
-		case 20:		// PGA G2
+		case 20: // PGA G2
 			val = (((*http_cgi_param_vals)[i]) == '0' ? pgagain & ~4 : pgagain | 4);
 			setpgagain(val);
 			break;
-		case 21:		// PGA G1
+		case 21: // PGA G1
 			val = (((*http_cgi_param_vals)[i]) == '0' ? pgagain & ~2 : pgagain | 2);
 			setpgagain(val);
 			break;
-		case 22:		// PGA G0
+		case 22: // PGA G0
 			val = (((*http_cgi_param_vals)[i]) == '0' ? pgagain & ~1 : pgagain | 1);
 			setpgagain(val);
 			break;
 
-		case 23:		// RF Switch
+		case 23: // RF Switch
 			if (((*http_cgi_param_vals)[i]) == '1')
-				HAL_GPIO_WritePin(GPIOE, LP_FILT_Pin, GPIO_PIN_RESET);// select RF Switches to LP filter (normal route)
+				HAL_GPIO_WritePin(GPIOE, LP_FILT_Pin, GPIO_PIN_RESET); // select RF Switches to LP filter (normal route)
 			else
-				HAL_GPIO_WritePin(GPIOE, LP_FILT_Pin, GPIO_PIN_SET);		// select RF Switches to bypass LP filter
+				HAL_GPIO_WritePin(GPIOE, LP_FILT_Pin, GPIO_PIN_SET); // select RF Switches to bypass LP filter
 			break;
 
-		case 24:		// PGA
+		case 24: // PGA
 			agc = (((*http_cgi_param_vals)[i]) == '0' ? 0 : 1);
 			break;
 
@@ -115,37 +122,44 @@ void httpd_cgi_handler(struct fs_file *file, const char *uri, int count, char **
 			printf("Unknown id in cgi handler %s\n", *http_cgi_params);
 			break;
 		} // end switch
-	} // end for
+	}	  // end for
 }
 
-err_t httpd_post_receive_data(void *connection, struct pbuf *p) {
+err_t httpd_post_receive_data(void *connection, struct pbuf *p)
+{
 	printf("httpd_post_receive_data: \n");
 	return (0);
 }
 
 err_t httpd_post_begin(void *connection, const char *uri, const char *http_request, u16_t http_request_len,
-		int content_len, char *response_uri, u16_t response_uri_len, u8_t *post_auto_wnd) {
+					   int content_len, char *response_uri, u16_t response_uri_len, u8_t *post_auto_wnd)
+{
 	printf("httpd_post_begin: \n");
 	return (0);
 }
 
-void httpd_post_finished(void *connection, char *response_uri, u16_t response_uri_len) {
+void httpd_post_finished(void *connection, char *response_uri, u16_t response_uri_len)
+{
 	printf("httpd_post_finished: \n");
 }
 
 // this is called to process tags when constructing the webpage being sent to the user
-void http_set_ssi_handler(tSSIHandler ssi_handler, const char **tags, int num_tags);  // prototype
+void http_set_ssi_handler(tSSIHandler ssi_handler, const char **tags, int num_tags); // prototype
 // embedded ssi handler
-const char *tagname[] = { "temp", "pressure", "time", "led1", "sw1A", "sw1B", "sw1C", "sw1D", "sw2A", "sw2B", "sw2C",
-		"sw2D", "butt1", "PG0", "PG1", "PG2", "RF1", "devid", "detinfo", "GPS", "AGC", (void*) NULL };
+const char *tagname[] = {"temp", "pressure", "time", "led1", "sw1A", "sw1B", "sw1C", "sw1D", "sw2A", "sw2B", "sw2C",
+						 "sw2D", "butt1", "PG0", "PG1", "PG2", "RF1", "devid", "detinfo", "GPS", "AGC", (void *)NULL};
 int i, j;
 
 // the tag callback handler
-tSSIHandler tag_callback(int index, char *newstring, int maxlen) {
-//  LOCK_TCPIP_CORE();
-	if (ledsenabled) {
+tSSIHandler tag_callback(int index, char *newstring, int maxlen)
+{
+	//  LOCK_TCPIP_CORE();
+	if (ledsenabled)
+	{
 		HAL_GPIO_TogglePin(GPIOD, LED_D3_Pin);
-	} else {
+	}
+	else
+	{
 		HAL_GPIO_WritePin(GPIOD, LED_D3_Pin, GPIO_PIN_RESET);
 	}
 	/*
@@ -161,89 +175,96 @@ tSSIHandler tag_callback(int index, char *newstring, int maxlen) {
 		printf("semaphore take2 failed\n");
 	}
 #endif
-	while (!(xSemaphoreTake(ssicontentHandle,( TickType_t ) 1 ) == pdTRUE)) {// get the ssi generation semaphore (portMAX_DELAY == infinite)
+	while (!(xSemaphoreTake(ssicontentHandle, (TickType_t)1) == pdTRUE))
+	{ // get the ssi generation semaphore (portMAX_DELAY == infinite)
 		printf("sem wait 2\n");
 	}
 	{
-//		printf("sem2 wait done\n");
+		//		printf("sem2 wait done\n");
 	}
 
-	if ((index > 3) && (index < 12)) {		// omux array
-		i = index - 4;		// 0 to 7
+	if ((index > 3) && (index < 12))
+	{				   // omux array
+		i = index - 4; // 0 to 7
 		i = (muxdat[0] & (1 << i));
-		if (i == 0)		// around the houses
+		if (i == 0) // around the houses
 			strcpy(newstring, "0");
 		else
 			strcpy(newstring, "1");
-//			sprintf(newstring,"<%d>",index);
-	} else
-		switch (index) {
+		//			sprintf(newstring,"<%d>",index);
+	}
+	else
+		switch (index)
+		{
 		case 0:
-			strcpy(newstring, tempstr);		// temperature
+			strcpy(newstring, tempstr); // temperature
 			break;
 		case 1:
-			strcpy(newstring, pressstr);		// pressure
+			strcpy(newstring, pressstr); // pressure
 			break;
 		case 2:
 			strcpy(newstring, nowtimestr);
 			break;
-		case 3:			// Led1
+		case 3: // Led1
 			if (HAL_GPIO_ReadPin(GPIOD, LED_D4_Pin) == GPIO_PIN_SET)
 				strcpy(newstring, "1");
 			else
 				strcpy(newstring, "0");
 			break;
-		case 12:		// butt1
+		case 12: // butt1
 			strcpy(newstring, "5");
 			break;
-		case 13:	// PG0
+		case 13: // PG0
 			strcpy(newstring, (pgagain & 1) ? "1" : "0");
 			break;
-		case 14:	// PG1
+		case 14: // PG1
 			strcpy(newstring, (pgagain & 2) ? "1" : "0");
 			break;
-		case 15:	// PG2
+		case 15: // PG2
 			strcpy(newstring, (pgagain & 4) ? "1" : "0");
 			break;
-		case 16:	// RF1
+		case 16: // RF1
 			strcpy(newstring, (HAL_GPIO_ReadPin(GPIOE, LP_FILT_Pin) ? "0" : "1"));
 			break;
-		case 17:	// Device IDs
-			strcpy(newstring, snstr);			// Detector ID
+		case 17:					  // Device IDs
+			strcpy(newstring, snstr); // Detector ID
 			break;
-		case 18:	// Detector Info
-			strcpy(newstring, statstr);		// Detector Status
+		case 18:						// Detector Info
+			strcpy(newstring, statstr); // Detector Status
 			break;
-		case 19:	// GPS
-			strcpy(newstring, gpsstr);		// GPS Status
+		case 19:					   // GPS
+			strcpy(newstring, gpsstr); // GPS Status
 			break;
-		case 20:	// AGC
-			strcpy(newstring, (agc) ? "1" : "0");		// AGC Status
+		case 20:								  // AGC
+			strcpy(newstring, (agc) ? "1" : "0"); // AGC Status
 			break;
 		default:
 			sprintf(newstring, "\"ssi_handler: bad tag index %d\"", index);
 			break;
 		}
-//		sprintf(newstring,"index=%d",index);
-//  UNLOCK_TCPIP_CORE();
+	//		sprintf(newstring,"index=%d",index);
+	//  UNLOCK_TCPIP_CORE();
 
-	if (xSemaphoreGive(ssicontentHandle) != pdTRUE) {		// give the ssi generation semaphore
-		printf("semaphore give2 failed\n");		// expect this to fail as part of the normal setup
+	if (xSemaphoreGive(ssicontentHandle) != pdTRUE)
+	{										// give the ssi generation semaphore
+		printf("semaphore give2 failed\n"); // expect this to fail as part of the normal setup
 	}
 	return (strlen(newstring));
 }
 
 // embedded ssi tag handler setup
-init_httpd_ssi() {
+init_httpd_ssi()
+{
 
-	http_set_ssi_handler(tag_callback, tagname, 21);	// was 32
+	http_set_ssi_handler(tag_callback, tagname, 21); // was 32
 }
 
 ///////////////////////////////////////////////////////
 /// parse p2 params
 // return 0 for success
 //////////////////////////////////////////////////////
-int parsep2(char *buf, char *match, int type, void *value) {
+int parsep2(char *buf, char *match, int type, void *value)
+{
 	int i, j;
 	char *pch;
 	uint32_t *val;
@@ -251,26 +272,38 @@ int parsep2(char *buf, char *match, int type, void *value) {
 	i = 0;
 	j = 0;
 	val = value;
-	while ((buf[i]) && (buf[i] != '}')) {
-		if (buf[i++] == match[j]) {
+	while ((buf[i]) && (buf[i] != '}'))
+	{
+		if (buf[i++] == match[j])
+		{
 			j++;
-		} else {
+		}
+		else
+		{
 			j = 0;
 		}
-		if (j > 0) {		// started matching something
-			if (buf[i] == ':') {		// end of match
+		if (j > 0)
+		{ // started matching something
+			if (buf[i] == ':')
+			{ // end of match
 				i++;
-				if (type == 1) {		// looking for a string
+				if (type == 1)
+				{ // looking for a string
 					j = 0;
 					pch = value;
-					while ((buf[i]) && ((isalnum(buf[i])) || (buf[i] == '.'))) {
+					while ((buf[i]) && ((isalnum(buf[i])) || (buf[i] == '.')))
+					{
 						pch[j++] = buf[i++];
 					}
 					pch[j] = 0;
 					return ((j > 0) ? 0 : -1);
-				} else if (type == 2) { // uint32_t base 10 string
+				}
+				else if (type == 2)
+				{ // uint32_t base 10 string
 					return ((sscanf(&buf[i], "%u", val) == 1) ? 0 : -1);
-				} else if (type == 3) { // uint32_t hex string
+				}
+				else if (type == 3)
+				{ // uint32_t hex string
 					return ((sscanf(&buf[i], "%x", val) == 1) ? 0 : -1);
 				}
 			}
@@ -295,8 +328,9 @@ int parsep2(char *buf, char *match, int type, void *value) {
  */
 
 // callback with the page
-void returnpage(volatile char *content, volatile u16_t charcount, int errorm) {
-	char *errormsg[] = { "OK", "OUT_MEM", "TIMEOUT", "NOT_FOUND", "GEN_ERROR" };
+void returnpage(volatile char *content, volatile u16_t charcount, int errorm)
+{
+	char *errormsg[] = {"OK", "OUT_MEM", "TIMEOUT", "NOT_FOUND", "GEN_ERROR"};
 	volatile uint32_t sn;
 	volatile int nconv, res, res2;
 	volatile int p1;
@@ -306,64 +340,75 @@ void returnpage(volatile char *content, volatile u16_t charcount, int errorm) {
 	char host[17] = "192.168.0.248";
 	int newfirmware = 0;
 
-//	printf("returnpage:\n");
-	if (expectedapage) {
-		if (errorm == 0) {
-//			printf("returnpage: errorm=%d, charcount=%d, content=%.*s\n", errorm, charcount, charcount, content);
+	//	printf("returnpage:\n");
+	if (expectedapage)
+	{
+		if (errorm == 0)
+		{
+			//			printf("returnpage: errorm=%d, charcount=%d, content=%.*s\n", errorm, charcount, charcount, content);
 			printf("server returned page: %.*s\n", charcount, content);
 			s1[0] = '\0';
 			nconv = sscanf(content, "%5u%48s%u%s", &sn, udp_target, &p1, &p2);
-			if (nconv != EOF) {
-				switch (nconv) {
+			if (nconv != EOF)
+			{
+				switch (nconv)
+				{
 
-				case 4: 							// converted  4 fields
+				case 4: // converted  4 fields
 					// this param is for a variable number of string tokens
-					if (p2[0] == '{') {		// its the start of enclosed params
+					if (p2[0] == '{')
+					{ // its the start of enclosed params
 						res = 0;
 						res2 = 0;
 						res |= parsep2(&p2[1], "fw", 1, filename);
 						res |= parsep2(&p2[1], "bld", 2, &newbuild);
-						res |= parsep2(&p2[1], "crc1", 3, &crc1);  // low addr
+						res |= parsep2(&p2[1], "crc1", 3, &crc1); // low addr
 						res |= parsep2(&p2[1], "crc2", 3, &crc2);
 						res2 |= parsep2(&p2[1], "srv", 1, &host);
 						res2 |= parsep2(&p2[1], "n2", 3, &n2);
 						res2 |= parsep2(&p2[1], "s1", 1, s1);
 
-//						printf("returnpage: filename=%s, srv=%s, build=%d, crc1=0x%08x, crc2=0x%08x, n1=0x%x, n2=0x%x, s1='%s', res=%d\n",	filename, host, newbuild, crc1, crc2, n1, n2, s1, res);
+						//						printf("returnpage: filename=%s, srv=%s, build=%d, crc1=0x%08x, crc2=0x%08x, n1=0x%x, n2=0x%x, s1='%s', res=%d\n",	filename, host, newbuild, crc1, crc2, n1, n2, s1, res);
 
-						if (!(res)) {		// a valid firmware string received
+						if (!(res))
+						{ // a valid firmware string received
 							newfirmware = 1;
 						}
 
 					} // else ignore it
 					  // fall through
 
-				case 3: 							// converted  3 fields
-					if (p1 == 1) {		// reboot
+				case 3: // converted  3 fields
+					if (p1 == 1)
+					{ // reboot
 						printf("Server -> commands a reboot...\n");
 						osDelay(500);
 						rebootme(6);
 					}
 
-					if (p1 == 2) {		// freeze the UDP streaming
+					if (p1 == 2)
+					{ // freeze the UDP streaming
 						globalfreeze = 1;
 						printf("Server -> commands a streaming freeze\n");
-					} else
+					}
+					else
 						globalfreeze = 0;
 					// falls through
 
-				case 2: 							// converted  2 fields
+				case 2: // converted  2 fields
 #ifdef TESTING
-				strcpy(udp_target, SERVER_DESTINATION);
+					strcpy(udp_target, SERVER_DESTINATION);
 #endif
-					if (strlen(udp_target) < 7) {					// bad url or ip address
-						strcpy(udp_target, SERVER_DESTINATION);		// default it
+					if (strlen(udp_target) < 7)
+					{											// bad url or ip address
+						strcpy(udp_target, SERVER_DESTINATION); // default it
 					}
 					printf("Server -> Target UDP host: %s\n", udp_target);
 					// falls through
 
-				case 1: 							// converted the first field which is the serial number
-					if (statuspkt.uid != sn) {
+				case 1: // converted the first field which is the serial number
+					if (statuspkt.uid != sn)
+					{
 						statuspkt.uid = sn;
 						printf("Server -> Serial Number: %lu\n", statuspkt.uid);
 					}
@@ -373,23 +418,29 @@ void returnpage(volatile char *content, volatile u16_t charcount, int errorm) {
 					printf("Wrong number of params from Server -> %d\n", nconv);
 					break;
 				}
-			} else {
+			}
+			else
+			{
 				printf("returnpage: (error returned) errno=%d\n", errorm);
 			}
 			// this has to happen last
-			if (!res) {		// build changed?
+			if (!res)
+			{ // build changed?
 				printf("Firmware: this build is %d, the server build is %d\n", BUILDNO, newbuild);
 			}
-			if ((statuspkt.uid != 0xfeed) && (newbuild != BUILDNO)) {// the version advertised is different to this one running now
+			if ((statuspkt.uid != 0xfeed) && (newbuild > BUILDNO))
+			{ // the version advertised is different to this one running now
 
-			if (lptask_init_done == 0)	{
-//			tftloader(filename, host, crc1, crc2);
-				osDelay(1000);
-				httploader(filename, host, crc1, crc2);	/// zzz  host ip ??
-			} else {
-				printf("Rebooting before loading new firmware, wait...\n");
-				rebootme(0);
-			}
+				if (lptask_init_done == 0)
+				{
+					osDelay(1000);
+					httploader(filename, host, crc1, crc2); /// zzz  host ip ??
+				}
+				else
+				{
+					printf("Rebooting before loading new firmware, wait...\n");
+					rebootme(0);
+				}
 			}
 		}
 	}
@@ -397,7 +448,8 @@ void returnpage(volatile char *content, volatile u16_t charcount, int errorm) {
 }
 
 // sends a URL request to a http server
-void getpage(char page[64]) {
+void getpage(char page[64])
+{
 	volatile int result;
 	ip_addr_t ip;
 	int err = 0;
@@ -406,46 +458,48 @@ void getpage(char page[64]) {
 
 	printf("getpage: %s\n", page);
 
-//    err = dnslookup(SERVER_DESTINATION, &(remoteip.addr));		// find serial number and udp target IP address
-//	if (err != ERR_OK)
-//		rebootme(7);
-//	ip.addr = remoteip.addr;
-//	printf("\n%s Control Server IP: %lu.%lu.%lu.%lu\n", SERVER_DESTINATION, (ip.addr) & 0xff, ((ip.addr) & 0xff00) >> 8,
-//			((ip.addr) & 0xff0000) >> 16, ((ip.addr) & 0xff000000) >> 24);
-	printf("Control Server is %s\n",SERVER_DESTINATION);
+	//    err = dnslookup(SERVER_DESTINATION, &(remoteip.addr));		// find serial number and udp target IP address
+	//	if (err != ERR_OK)
+	//		rebootme(7);
+	//	ip.addr = remoteip.addr;
+	//	printf("\n%s Control Server IP: %lu.%lu.%lu.%lu\n", SERVER_DESTINATION, (ip.addr) & 0xff, ((ip.addr) & 0xff00) >> 8,
+	//			((ip.addr) & 0xff0000) >> 16, ((ip.addr) & 0xff000000) >> 24);
+	printf("Control Server is %s\n", SERVER_DESTINATION);
 
 	result = hc_open(SERVER_DESTINATION, page, postvars, NULL);
-//	printf("httpclient: result=%d\n", result);
-
+	//	printf("httpclient: result=%d\n", result);
 }
 
 // get the serial number and udp target for this device
 // reboot if fails
-void initialapisn() {
+void initialapisn()
+{
 	int i, j;
 
 	j = 1;
 	sprintf(stmuid, "/api/Device/%lx%lx%lx", STM32_UUID[0], STM32_UUID[1], STM32_UUID[2]);
 
-	while (statuspkt.uid == 0xfeed)		// not yet found new S/N from server
+	while (statuspkt.uid == 0xfeed) // not yet found new S/N from server
 	{
 		printf("getting S/N and UDP target using http. Try=%d\n", j);
-		getpage(stmuid);		// get sn and targ
-		for (i=0; i<5000; i++) {
+		getpage(stmuid); // get sn and targ
+		for (i = 0; i < 5000; i++)
+		{
 			if (statuspkt.uid != 0xfeed)
 				break;
 			osDelay(1);
 		}
 		j++;
-		if (j > 5) {
+		if (j > 5)
+		{
 			printf("************* ABORTED **************\n");
 			rebootme(8);
 		}
 	}
 }
 
-void requestapisn() {
+void requestapisn()
+{
 	printf("updating S/N and UDP target using http\n");
-	getpage(stmuid);		// get sn and targ
+	getpage(stmuid); // get sn and targ
 }
-
