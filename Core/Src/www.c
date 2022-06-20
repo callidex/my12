@@ -38,8 +38,8 @@ int expectedapage = 0;
 void httpd_cgi_handler(struct fs_file *file, const char *uri, int count, char **http_cgi_params,
 					   char **http_cgi_param_vals)
 {
-	const char id[15][6] = {"led1", "sw1A", "sw1B", "sw1C", "sw1D", "sw2A", "sw2B", "sw2C", "sw2D", "btn", "PG2",
-							"PG1", "PG0", "RF1", "AGC"};
+	//const char id[15][6] = {"led1", "sw1A", "sw1B", "sw1C", "sw1D", "sw2A", "sw2B", "sw2C", "sw2D", "btn", "PG2",
+	//						"PG1", "PG0", "RF1", "AGC"};
 
 	int i, j, val;
 	char *ptr;
@@ -253,7 +253,7 @@ tSSIHandler tag_callback(int index, char *newstring, int maxlen)
 }
 
 // embedded ssi tag handler setup
-init_httpd_ssi()
+void init_httpd_ssi()
 {
 
 	http_set_ssi_handler(tag_callback, tagname, 21); // was 32
@@ -450,7 +450,7 @@ void returnpage(volatile char *content, volatile u16_t charcount, int errorm)
 // sends a URL request to a http server
 void getpage(char page[64])
 {
-	volatile int result;
+
 	ip_addr_t ip;
 	int err = 0;
 
@@ -466,8 +466,8 @@ void getpage(char page[64])
 	//			((ip.addr) & 0xff0000) >> 16, ((ip.addr) & 0xff000000) >> 24);
 	printf("Control Server is %s\n", SERVER_DESTINATION);
 
-	result = hc_open(SERVER_DESTINATION, page, postvars, NULL);
-	//	printf("httpclient: result=%d\n", result);
+	volatile int result = hc_open(SERVER_DESTINATION, page, postvars, NULL);
+	printf("httpclient: result=%d\n", result);
 }
 
 // get the serial number and udp target for this device

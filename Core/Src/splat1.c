@@ -593,7 +593,7 @@ void init_esp() {
 	printf("\n");
 }
 
-uart6_rxdone() {
+void uart6_rxdone() {
 	HAL_StatusTypeDef stat;
 	int i;
 

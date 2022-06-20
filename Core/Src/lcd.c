@@ -75,6 +75,11 @@ inline int cycdec(int index, int limit) {
 	else
 		return (0);
 }
+void lcd_trigcharts();
+void lcd_showvars();
+void lcd_presscharts();
+void lcd_controls();
+void rebootme();
 
 // wait for Tx DMA to complete - timeout if error
 // then re-arm the wait flag
@@ -117,12 +122,13 @@ void uart5_rxdone() {
 
 // Transmit completed callback
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
-	volatile uint32_t reg;
+
 
 	if (huart->Instance == UART5) {
 
 //	printf("UART5 Tx Complete\n");
 #if 0
+		volatile uint32_t reg;
 		while (1) {
 			reg = (UART5->ISR);
 			if ((reg & 0xD0) == 0xD0) // UART_IT_TXE and TC)
@@ -179,13 +185,13 @@ void lcd_uart_init(int baud) {
 // lcd_init:  sends LCD reset command and them two set hi-speed commands
 void lcd_init(int baud) {
 	volatile HAL_StatusTypeDef stat;
-	int i;
+	//int i;
 
 	const unsigned char lcd_reset[] = { "rest\xff\xff\xff" };
 	const unsigned char lcd_fast[] = { "baud=230400\xff\xff\xff" };
 	const unsigned char lcd_slow[] = { "baud=9600\xff\xff\xff" };
-	int siz, page;
-	volatile char *cmd;
+	//int siz, page;
+	//volatile char *cmd;
 
 	printf("lcd_init: baud=%d\n", baud);
 	if (!((baud == 9600) || (baud == 230400))) {
@@ -243,7 +249,7 @@ int lcd_puts(char *str) {
 	HAL_StatusTypeDef stat;
 	volatile int i;
 	static char buffer[96];
-	uint32_t reg;
+//	uint32_t reg;
 
 	if (wait_armtx() == -1)
 		return (-1);
@@ -345,7 +351,7 @@ int lcd_getc() {
 // terminate with three 0xff's
 // returns 0 if sent
 int intwritelcdcmd(char *str) {
-	char i = 0;
+
 	char pkt[96];  //  __attribute__ ((aligned (16)));
 
 	strcpy(pkt, str);
@@ -357,7 +363,7 @@ int intwritelcdcmd(char *str) {
 // terminate with three 0xff's
 // returns 0 if sent
 int writelcdcmd(char *str) {
-	char i = 0;
+
 	char pkt[96];  //  __attribute__ ((aligned (16)));
 
 	strcpy(pkt, str);
@@ -370,7 +376,7 @@ int writelcdcmd(char *str) {
 
 // send some text to a lcd text object
 int setlcdtext(char id[], char string[]) {
-	int i;
+
 	char str[96];
 	volatile int result = 0;
 
@@ -434,7 +440,7 @@ int getlcdpage(void) {
 // lcd page change event occurred
 // lcd_currentpage is the current LCD page displayed
 // newpage is the last one we have written
-lcd_pagechange(uint8_t newpage) {
+int lcd_pagechange(uint8_t newpage) {
 	unsigned char str[32];
 
 	if (newpage == our_currentpage)			// we are already on the page the LCD is on
@@ -636,9 +642,10 @@ int lcd_event_process(void) {
 				return (-1);
 				break;
 			} // end case
-			return (0);
+
 		}
 	}
+	return (0);
 }
 
 // processnex   process LCD errors and read from LCD
@@ -776,7 +783,7 @@ void lcd_showvars() {
 		break;
 
 	case 1:
-		sprintf(str, "%d", statuspkt.NavPvt.numSV);	// satellites
+		sprintf(str, "%u", statuspkt.NavPvt.numSV);	// satellites
 		setlcdtext("t0.txt", str);
 		sprintf(str, "%d", statuspkt.NavPvt.lat);	// latitude
 		setlcdtext("t1.txt", str);
@@ -834,7 +841,7 @@ for (i=0; i<LCDXPIXELS; i++) {
 	for (i = 0; i < LCDXPIXELS; i++) {
 		if (our_currentpage != 2)		// impatient user
 			return;
-		sprintf(str, "add 2,0,%d", trigvec[buffi]);
+		sprintf(str, "add 2,0,%u", trigvec[buffi]);
 		writelcdcmd(str);
 		osDelay(15);
 
@@ -983,7 +990,7 @@ void lcd_pressplot() {
 }
 
 // refresh the entire control page on the lcd
-lcd_controls() {
+void lcd_controls() {
 	unsigned char str[48];
 
 	osDelay(100);

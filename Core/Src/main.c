@@ -483,20 +483,6 @@ err_leds(int why) {
 	}
 }
 
-void rebootme(int why) {
-	volatile unsigned int i;
-
-	while (1) {
-#ifdef HARDWARE_WATCHDOG
-		__disable_irq();			// mask all interrupts
-		err_leds(why);
-#else
-		err_leds(why);
-		osDelay(6000);
-		__NVIC_SystemReset();   // reboot
-#endif
-	}
-}
 
 void netif_status_callbk_fn(struct netif *netif) {
 

@@ -28,6 +28,7 @@
 #include "neo7m.h"
 #include "adcstream.h"
 #include <time.h>
+#include "utils.h"
 #include "lcd.h"
 
 typedef uint8_t byte;

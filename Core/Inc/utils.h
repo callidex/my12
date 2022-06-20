@@ -1,0 +1,2 @@
+
+void rebootme(int why);
